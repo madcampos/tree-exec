@@ -116,7 +116,6 @@ function showFullHelp(){
 	clui.div({text: `If the options are preceeded by a ${chalk.cyan.bold('`~`')} then the path will be unquoted.
 Eg.: ${chalk.cyan.bold('`@~f`')} will produce ${chalk.cyan.bold('`./dir/file.ext`')}`, padding: [1, 0, 0, 0]});
 
-	clui.div(footer);
 	console.log(clui.toString().replace(/\$0/gmi, programName));
 }
 
