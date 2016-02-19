@@ -72,7 +72,7 @@ function setArgHelp(arg){
 		{
 			text: `-${arg.name}, --${arg.alias}`,
 			width: 25,
-			padding: [0, 0, 0, 4],
+			padding: [0, 0, 0, 4]
 		},
 		{
 			text: arg.desc,
@@ -88,10 +88,8 @@ function setArgHelp(arg){
 
 /**
  * Show the full help for the command.
- * @param {String} header The header string to display before the argument list.
- * @param {String} footer The footer string to display after the argument list.
  */
-function showFullHelp(footer){
+function showFullHelp(){
 	clui.div('Walks a path and executes the given command for each file on the path.');
 	clui.div({text: chalk.green.bold('Basic usage:'), padding: [1, 0, 1, 1]});
 	clui.div({text: '$0 [options] <command>', padding: [0, 0, 0, 4]});
