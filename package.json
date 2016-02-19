@@ -3,6 +3,11 @@
   "version": "1.0.0",
   "description": "Walks a tree and executes a command for each path.",
   "main": "index.js",
+	"bin": "bin/tree-exec",
+	"preferGlobal": true,
+	"engines": {
+		"node": ">=4.0.0"
+	},
   "scripts": {
     "test": "echo \"So cocky, much cowboy, wow!\""
   },
