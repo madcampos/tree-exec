@@ -1,0 +1,182 @@
+#!/usr/bin/env node --harmony
+/*global process*/
+'use strict';
+
+let path = require('path');
+let exec = require('child_process').exec;
+let chalk = require('chalk');
+let Table = require('cli-table2');
+let argsParser = require('minimist');
+let walker = require('../index.js');
+let argsOptions = {string: [], 'boolean': [], alias: {}, stopEarly: true};
+let args = {};
+let argsMetadata = [];
+let size = require('window-size');
+let clui = require('cliui')({width: Math.max(size.width, 80), wrap: true});
+let programName = path.basename(process.argv.slice(0, 2).filter((elm, i) => {return i === 0 && (/node|iojs/).test(elm) ? false : elm;}));
+
+/**
+ * Sets an argument to the list of arguments.
+ * @param {String} name The argument name.
+ * @param {String} [alias] The argument alias, if any.
+ * @param {String} desc The argument description.
+ * @param {String} type The argument type.
+ * @param {String} group The argument grouping header, if any.
+ * @param {String} example A usage example for the command, if any.
+ */
+function setArg(name, alias, desc, type, group, example){
+	if (type.toLowerCase() === 'boolean') {
+		argsOptions.boolean.push(name);
+	} else {
+		argsOptions.string.push(name);
+	}
+
+	if (alias) {
+		argsOptions.alias[name] = alias;
+	}
+
+	argsMetadata.push({
+		name: name,
+		alias: alias,
+		desc: desc,
+		type: type,
+		group: group,
+		example: example
+	});
+}
+
+/**
+ * Show the full help for the command.
+ * @param {String} header The header string to display before the argument list.
+ * @param {String} footer The footer string to display after the argument list.
+ */
+function showFullHelp(header, footer){
+	clui.div(header);
+	//TODO: build commands help.
+	clui.div(footer);
+	console.log(clui.toString().replace(/\$0/gmi, programName));
+}
+
+/*
+ * Basic usage / Help header
+ */
+let header = `Walks a path and executes the given command for each file on the path.
+
+${chalk.green.underline('Basic usage:')}
+
+$0 [options] <command>
+
+${chalk.green.underline('Examples:')}
+$0 -a command @f
+$0 -g="./**/*.ext" command @f
+$0 -r="[^node_modules]\/.*$" command @f`;
+
+/*
+ * Help footer
+ */
+let replaceOptions = new Table({head: ['Opt', 'Result', 'Example'], wordWrap: true, colWidths: [5, Math.max(size.width - 40, 40), 30], style: {head: []}});
+
+replaceOptions.push(
+	[chalk.cyan.bold('`f`'), 'The path, name and extension of the file.', chalk.cyan.bold('`./dir/file.ext`')],
+	[chalk.cyan.bold('`n`'), 'The name of the file.', chalk.cyan.bold('`file`')],
+	[chalk.cyan.bold('`e`'), 'The extension of the file (with dot).', chalk.cyan.bold('`.ext`')],
+	[chalk.cyan.bold('`r`'), 'The relative path of the file.', chalk.cyan.bold('`./dir/`')],
+	[chalk.cyan.bold('`p`'), 'The full path of the file.', chalk.cyan.bold('`/home/user/dir/`')],
+	[chalk.cyan.bold('`s`'), 'The file size (in human redable format).', chalk.cyan.bold('`1KB`')],
+	[chalk.cyan.bold('`z`'), 'The file size (in bytes).', chalk.cyan.bold('`1024`')],
+	[chalk.cyan.bold('`m`'), 'The file\'s last modified timestamp.', chalk.cyan.bold('`2016116043022876`')],
+	[chalk.cyan.bold('`t`'), 'The file\'s creation timestamp.', chalk.cyan.bold('`2016116043022876`')]
+);
+
+let footer = `
+${chalk.green.underline('Replace options:')}
+
+The following options can be used after ${chalk.cyan.bold('`@`')}:
+
+${replaceOptions.toString()}
+
+If the options are preceeded by a ${chalk.cyan.bold('`~`')} then the path will be unquoted.
+Eg.: ${chalk.cyan.bold('`@~f`')} will produce ${chalk.cyan.bold('`./dir/file.ext`')}`;
+
+/*
+ * General options
+ */
+setArg('h', 'help', 'Show this help information.', 'boolean', chalk.green.underline('Options:'));
+setArg('p', 'path', 'The base path to start the search, if it is different from the current working directory.', 'string', chalk.green.underline('Options:'));
+setArg('d', 'depth', 'Sets the depth to search.', 'number', chalk.green.underline('Options:'));
+
+/*
+ * Search methods
+ */
+setArg('g', 'glob', 'A glob pattern to use as search.', 'string', chalk.green.underline('Search methods:'));
+setArg('r', 'regex', 'A RegExp pattern to use as search.', 'string', chalk.green.underline('Search methods:'));
+setArg('a', 'all', 'Search throug all files.', 'boolean', chalk.green.underline('Search methods:'));
+
+/*
+ * General flags
+ */
+setArg('i', 'icase', 'Set case insensitiveness of the search.', 'boolean', chalk.green.underline('General flags:'));
+setArg('x', 'dot', `Sets if it should include paths starting with ${chalk.cyan.bold('`.`')}.`, 'boolean', chalk.green.underline('General flags:'));
+setArg('l', 'lib', `Sets if it should include library paths like ${chalk.cyan.bold('`node_modules`')} or ${chalk.cyan.bold('`bower_components`')}.`, 'boolean', chalk.green.underline('General flags:'));
+
+/*
+ * RegExp flags
+ */
+setArg('u', 'unicode', 'Set the unicode flag.\nNOTE: Only use if your node version supports it, or it will give wrong results.', 'boolean', chalk.green.underline('RegExp flags:'));
+
+/*
+ * Glob flags
+ */
+setArg('s', 'globstar', `Disable ${chalk.cyan.bold('`**`')} matching against multiple folder names.`, 'boolean', chalk.green.underline('Glob flags:'));
+setArg('c', 'nocomment', `Suppress the behavior of treating ${chalk.cyan.bold('`#`')} at the start of a pattern as a comment.`, 'boolean', chalk.green.underline('Glob flags:'));
+setArg('n', 'nonegate', `Suppress the behavior of treating a leading ${chalk.cyan.bold('`!`')} character as negation.`, 'boolean', chalk.green.underline('Glob flags:'));
+setArg('e', 'noext', `Disable "extglob" style patterns like ${chalk.cyan.bold('`+(a|b)`')}.`, 'boolean', chalk.green.underline('Glob flags:'));
+setArg('b', 'nobrace', `Do not expand ${chalk.cyan.bold('`{a,b}`')} and ${chalk.cyan.bold('`{1..3}`')} brace sets.`, 'boolean', chalk.green.underline('Glob flags:'));
+setArg('m', 'mathbase', `If set, then patterns without slashes will be matched against the basename of the path if it contains slashes. For example, ${chalk.cyan.bold('`a?b`')} would match the path ${chalk.cyan.bold('`/xyz/123/acb`')}, but not ${chalk.cyan.bold('`/xyz/acb/123`')}.`, 'boolean', chalk.green.underline('Glob flags:'));
+
+/*
+ * Processing args methods
+ */
+args = argsParser(process.argv.slice(2), argsOptions);
+
+if (process.argv.length <= 2 || args.h) {
+	showFullHelp(header, footer);
+	process.exit(1);
+}
+
+let searchPath = args.p ? path.normalize(args.p) : process.cwd();
+let searchType = 'all';
+let filterOptions = {
+	flags: `${args.i ? 'i' : ''}${args.u ? 'u' : ''}`,
+	globOptions: {
+		noglobstar: args.s,
+		nocomment: args.c,
+		nonegate: args.n,
+		noext: args.e,
+		nobrace: args.b,
+		matchbase: args.m,
+		nocase: args.i,
+		dot: args.x
+	},
+	excludeDot: !args.x,
+	depth: args.d ? parseInt(args.d, 10) : 10,
+	excludeLibrary: !args.l
+};
+
+if (args.r) {searchType = 'regexp';}
+if (args.g) {searchType = 'glob';}
+
+let command = args._.join(' ').split(/@[~pnerfszmt]+/);
+let substitutionStrings = args._.join(' ').match(/@[~pnerfszmt]+/g) || [];
+substitutionStrings = substitutionStrings.map((elm) => walker.transform(elm));
+
+walker.filter(searchPath, args.g || args.r || '', searchType, filterOptions).forEach((file) => {
+	exec(command.map((elm, i) => elm += substitutionStrings[i] ? substitutionStrings[i](file) : '').join(''), (error, stdout, stderr) => {
+		if (error) {
+			console.error(chalk.red.bold(error));
+			console.log(`${chalk.yellow.bold('Program output:')} ${stderr}`);
+		} else {
+			console.log(`${chalk.green.bold('Program output:')} ${stdout}`);
+		}
+	});
+});

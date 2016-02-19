@@ -1,0 +1,35 @@
+{
+  "name": "tree-exec",
+  "version": "1.0.0",
+  "description": "Walks a tree and executes a command for each path.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"So cocky, much cowboy, wow!\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/madcampos/tree-exec.git"
+  },
+  "keywords": [
+    "cli",
+    "dir",
+    "npm",
+    "exec",
+    "command",
+    "tree"
+  ],
+  "author": "madcampos",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/madcampos/tree-exec/issues"
+  },
+  "homepage": "https://github.com/madcampos/tree-exec#readme",
+  "dependencies": {
+    "chalk": "^1.1.1",
+    "cli-table2": "^0.2.0",
+    "cliui": "^3.1.0",
+    "minimatch": "^3.0.0",
+    "minimist": "^1.2.0",
+    "window-size": "^0.2.0"
+  }
+}
