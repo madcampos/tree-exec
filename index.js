@@ -1,3 +1,4 @@
+/*eslint-env node*/
 /*global process*/
 'use strict';
 let fs = require('fs');

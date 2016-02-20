@@ -1,4 +1,6 @@
 #!/usr/bin/env node --harmony
+/*eslint-env node*/
+/*eslint no-process-exit: 0*/
 /*global process*/
 'use strict';
 
@@ -192,7 +194,7 @@ let substitutionStrings = args._.join(' ').match(/@[~pnerfszmt]+/g) || [];
 substitutionStrings = substitutionStrings.map((elm) => walker.transform(elm));
 
 walker.filter(searchPath, args.g || args.r || '', searchType, filterOptions).forEach((file) => {
-	exec(command.map((elm, i) => elm += substitutionStrings[i] ? substitutionStrings[i](file) : '').join(''), (error, stdout, stderr) => {
+	exec(command.map((elm, i) => {return elm + substitutionStrings[i] ? substitutionStrings[i](file) : '';}).join(''), (error, stdout, stderr) => {
 		if (error) {
 			console.error(chalk.red.bold(error));
 			console.log(`${chalk.yellow.bold('Program output:')} ${stderr}`);
