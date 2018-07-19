@@ -31,7 +31,7 @@
   "homepage": "https://github.com/madcampos/tree-exec#readme",
   "dependencies": {
     "chalk": "^1.1.1",
-    "cli-table2": "^0.2.0",
+    "cli-table3": "^0.5.0",
     "cliui": "^3.1.0",
     "minimatch": "^3.0.0",
     "minimist": "^1.2.0",
